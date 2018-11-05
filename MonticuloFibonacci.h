@@ -2,7 +2,8 @@
 #define MonticuloFibonacci_h
 
 #include <iostream>
-#include <unordered_set>
+#include <stdexcept>
+#include <vector>
 
 /*
 Por comodidad y para simplificar la sintaxis se añade el espacio de nombres estándar
@@ -77,7 +78,7 @@ void inserta(T const & e) {
 		nelems++;
 }
 
-T const& minim() const {
+T const& minimo() const {
 	if (min == nullptr) throw domain_error("El montículo está vacío");
 	else return min->elem;
 }
@@ -96,7 +97,43 @@ void unir(monticuloFib<T> const& otro) {
 	nelems += otro->nelems;
 }
 
+T const& quitarMinimo() {
 
+	if (min != nullptr) {
+
+		Link minimo = min;
+		Link hijo = min->hijo;
+
+		// Primero añadimos todos los hijos del minimo a la lista pricipal
+
+		if (hijo != nullptr) {
+			minimo->hIz->hDer = hijo;
+			hijo->hIz->hDer = minimo;
+			Link anteriorHijo = hijo->hIz;
+			hijo->hIz = minimo->hIz;
+			minimo->hIz = anteriorHijo;
+		}
+
+		minimo->hijo = nullptr;
+
+		for (Link act = hijo; act != minimo; act = act->hDer) act->padre = nullptr;
+
+		// Eliminamos el minimo de la lista principal
+
+		minimo->hIz->hDer = minimo->hDer;
+		minimo->hDer->hIz = minimo->hIz;
+
+		if (minimo == minimo->hDer) min = nullptr;
+		else {
+			min = minimo->hDer;
+			//consolidar();
+		}
+		nelems--;
+		return minimo->elem;
+	}
+	else throw domain_error("No existe elemento minimo que quitar");
+
+}
 
 
 
