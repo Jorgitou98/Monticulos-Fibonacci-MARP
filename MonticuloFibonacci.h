@@ -15,7 +15,7 @@ using namespace std;
 // Genérico para el tipo de datos almacenados
 template <class T>
 
-class monticuloFib {
+class mFib {
 
 
 	/*
@@ -50,30 +50,60 @@ protected:
 
 
 private :
-	void insertaEnLPrincipal(Link x) { // Se asume que
-		if (min == nullptr) {
-			x->hDer = x;
-			x->hIz = x;
-			min = x;
-		}
-		else {
-			x->hIz = min->hIz;
-			x->hDer = min;
-			(min->hIz)->hDer = x;
-			min->hIz = x;
-			if (x->elem < min->elem) min = x;
+	void insertaEnLPrincipal(Link x) {
+		if (x != nullptr) {
+			if (min == nullptr) {
+				x->hDer = x;
+				x->hIz = x;
+				min = x;
+			}
+			else {
+				x->hIz = min->hIz;
+				x->hDer = min;
+				(min->hIz)->hDer = x;
+				min->hIz = x;
+				if (x->elem < min->elem) min = x;
+			}
 		}
 	}
 
 	void mezclar(Link hijo, Link padre) {
+		// Primero quito de la lista principal el que será hijo
+		(hijo->hIz)->hDer = hijo->hDer;
+		(hijo->hDer)->hIz = hijo->hIz;
+		// Falta aún enlazarlo correctamente con si mismo por izquierda y derecha
+
+		if (padre->hijo == nullptr) {
+			padre->hijo = hijo;
+			// Ahora rompo los enlaces que le quedaban con sus antiguos hermanos
+			hijo->hDer = hijo;
+			hijo->hIz = hijo;
+		}
+		else {
+			hijo->hDer = padre->hijo;
+			hijo->hIz = padre->hijo->hIz;
+			padre->hijo->hIz->hDer = hijo;
+			padre->hijo->hIz = hijo;
+		}
+		// En ambos casos se convierte en hijo del padre. Luego:
+		hijo->padre = padre;
+		padre->grado++;
 
 	}
 
 	void consolidar() {
 		if (min != nullptr) {
 			size_t D = 2 * ceil( log( double(nelems) ) );
-			vector <Link> A(D, nullptr);
-			Link act = min;
+			vector<Link> A;
+			for (int i = 0; i < D; ++i) {
+				A.push_back(nullptr);
+			}
+
+			/* La varibale actSig es porque el avance no será siempre al siguiente en
+			la lista principal, de forma que guardo encada caso qué nodo vistoen la siguiente
+			iteración en esta variable */
+
+			Link act = min, actSig = min->hDer; 
 			Link y, guardaAct; // guardaAct me permitirá intercambiar act e y
 			do {
 				size_t g = act->grado;
@@ -84,22 +114,31 @@ private :
 						act = y;
 						y = guardaAct;
 					}
-					if (y == min) min = act; // El nuevo minimo está en act
+					/* Si el nuevo hijo será el que tenía hasta ahora como min, 
+					y por tanto desaparecerá de la lista principal, y es el siguiente
+					en visitarse hago que el siguiente en visitarse sea su siguiente.
+					Lo avanzo uno de mas
+					*/
+					if (actSig == min && y == min) {
+						actSig = y->hDer;
+					}
+
+					if (y == min) min = y->hDer;
 					
 					mezclar(y, act);
 
-					if (act->hDer == act) min = act;// Si solo queda un elem en la lista es el minimo
 					A[g] = nullptr;
 					g++;
 				}
 
 				A[g] = act;
-				act = act->hDer;
+				act = actSig;
+				actSig = act->hDer;
 
 			} while (act != min);
 
 			min = nullptr;
-			for (int i = 0; i <= D; ++i) insertaEnLPrincipal(A[i]);
+			for (int i = 0; i < D; ++i) insertaEnLPrincipal(A[i]);
 		}
 	}
 
@@ -108,7 +147,7 @@ private :
 
 
 public:
-monticuloFib (): min(nullptr),  nelems(0){}
+mFib (): min(nullptr),  nelems(0){}
 
 size_t size() {
 	return nelems;
@@ -127,7 +166,7 @@ T const& minimo() const {
 	else return min->elem;
 }
 
-void unir(monticuloFib<T> const& otro) {
+void unir(mFib<T> const& otro) {
 
 	if (otro.min != nullptr) {
 		if (min == nullptr) min = otro.min;
@@ -162,13 +201,11 @@ T const& quitarMinimo() {
 			Link anteriorHijo = hijo->hIz;
 			hijo->hIz = minimo->hIz;
 			minimo->hIz = anteriorHijo;
+			min = minimo;
+			minimo->hijo = nullptr;
+			for (Link act = hijo; act != minimo; act = act->hDer) act->padre = nullptr;
 		}
-
-		minimo->hijo = nullptr;
-
-		for (Link act = hijo; act != minimo; act = act->hDer) act->padre = nullptr;
-
-		// Eliminamos el minimo de la lista principal
+		// Eliminamos el minimo de la lista principal. No es necesario actalizar su grado a 0. Va a desaparecer
 
 		minimo->hIz->hDer = minimo->hDer;
 		minimo->hDer->hIz = minimo->hIz;
@@ -176,7 +213,7 @@ T const& quitarMinimo() {
 		if (minimo == minimo->hDer) min = nullptr;
 		else {
 			min = minimo->hDer;
-			//consolidar();
+			consolidar();
 		}
 		nelems--;
 		return minimo->elem;
