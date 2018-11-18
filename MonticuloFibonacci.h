@@ -7,25 +7,25 @@
 #include <cmath>
 
 /*
-Por comodidad y para simplificar la sintaxis se aÒade el espacio de nombres est·ndar
+Por comodidad y para simplificar la sintaxis se a√±ade el espacio de nombres est√°ndar
 (No estar escribiendo std:: en lo sucesivo)
 */
 using namespace std;
 
-// GenÈrico para el tipo de datos almacenados
+// Gen√©rico para el tipo de datos almacenados
 template <class T>
 
 class mFib {
 
 
 	/*
-	A continuaciÛn se declaran los atributos de la clase.
+	A continuaci√≥n se declaran los atributos de la clase.
 
-		- Un puntero al mÌnimo de la lista principal
-		- El n˙mero de nodos del montÌculo
+		- Un puntero al m√≠nimo de la lista principal
+		- El n√∫mero de nodos del mont√≠culo
 		- Clase interna Nodo que represena el valor y los enlaces con hermanos, hijos y padres
 
-	Se declarar·n como protected para permitir su manejo con herencia
+	Se declarar√°n como protected para permitir su manejo con herencia
 	*/
 
 protected:
@@ -41,111 +41,12 @@ protected:
 
 		T elem;
 		Link hIz, hDer, hijo, padre;
-		bool marca; // Indicar· la pÈrdida de un hijo de este nodo
-		size_t grado; // Altura del sub·rbol que tiene por debajo
+		bool marca; // Indicar√° la p√©rdida de un hijo de este nodo
+		size_t grado; // Altura del sub√°rbol que tiene por debajo
 	};
 
 	Link min;
 	size_t nelems;
-
-
-private :
-	void insertaEnLPrincipal(Link x) {
-		if (x != nullptr) {
-			if (min == nullptr) {
-				x->hDer = x;
-				x->hIz = x;
-				min = x;
-			}
-			else {
-				x->hIz = min->hIz;
-				x->hDer = min;
-				(min->hIz)->hDer = x;
-				min->hIz = x;
-				if (x->elem < min->elem) min = x;
-			}
-		}
-	}
-
-	void mezclar(Link hijo, Link padre) {
-		// Primero quito de la lista principal el que ser· hijo
-		(hijo->hIz)->hDer = hijo->hDer;
-		(hijo->hDer)->hIz = hijo->hIz;
-		// Falta a˙n enlazarlo correctamente con si mismo por izquierda y derecha
-
-		if (padre->hijo == nullptr) {
-			padre->hijo = hijo;
-			// Ahora rompo los enlaces que le quedaban con sus antiguos hermanos
-			hijo->hDer = hijo;
-			hijo->hIz = hijo;
-		}
-		else {
-			hijo->hDer = padre->hijo;
-			hijo->hIz = padre->hijo->hIz;
-			padre->hijo->hIz->hDer = hijo;
-			padre->hijo->hIz = hijo;
-		}
-		// En ambos casos se convierte en hijo del padre. Luego:
-		hijo->padre = padre;
-		padre->grado++;
-
-	}
-
-	void consolidar() {
-		if (min != nullptr) {
-			size_t D = 2 * ceil( log( double(nelems) ) );
-			vector<Link> A;
-			for (int i = 0; i < D; ++i) {
-				A.push_back(nullptr);
-			}
-
-			/* La varibale actSig es porque el avance no ser· siempre al siguiente en
-			la lista principal, de forma que guardo encada caso quÈ nodo vistoen la siguiente
-			iteraciÛn en esta variable */
-
-			Link act = min, actSig = min->hDer; 
-			Link y, guardaAct; // guardaAct me permitir· intercambiar act e y
-			do {
-				size_t g = act->grado;
-				while (A[g] != nullptr) {
-					y = A[g];
-					if (act->elem > y->elem) {
-						guardaAct = act;
-						act = y;
-						y = guardaAct;
-					}
-					/* Si el nuevo hijo ser· el que tenÌa hasta ahora como min, 
-					y por tanto desaparecer· de la lista principal, y es el siguiente
-					en visitarse hago que el siguiente en visitarse sea su siguiente.
-					Lo avanzo uno de mas
-					*/
-					if (actSig == min && y == min) {
-						actSig = y->hDer;
-					}
-
-					if (y == min) min = y->hDer;
-					
-					mezclar(y, act);
-
-					A[g] = nullptr;
-					g++;
-				}
-
-				A[g] = act;
-				act = actSig;
-				actSig = act->hDer;
-
-			} while (act != min);
-
-			min = nullptr;
-			for (int i = 0; i < D; ++i) insertaEnLPrincipal(A[i]);
-		}
-	}
-
-
-//Lo siguiente que se declara es un constructor del montÌculo vacÌo
-
-
 public:
 mFib (): min(nullptr),  nelems(0){}
 
@@ -153,7 +54,7 @@ size_t size() {
 	return nelems;
 }
 
-// A continuaciÛn la funciÛn que inserta elementos al montÌculo
+// A continuaci√≥n la funci√≥n que inserta elementos al mont√≠culo
 
 void inserta(T const & e) {
 		Link x = new Nodo(e);
@@ -162,7 +63,7 @@ void inserta(T const & e) {
 }
 
 T const& minimo() const {
-	if (min == nullptr) throw domain_error("El montÌculo est· vacÌo");
+	if (min == nullptr) throw domain_error("El mont√≠culo est√° vac√≠o");
 	else return min->elem;
 }
 
@@ -185,43 +86,6 @@ void unir(mFib<T> const& otro) {
 		nelems += otro.nelems;
 	}
 }
-
-T const& quitarMinimo() {
-
-	if (min != nullptr) {
-
-		Link minimo = min;
-		Link hijo = min->hijo;
-
-		// Primero aÒadimos todos los hijos del minimo a la lista pricipal
-
-		if (hijo != nullptr) {
-			minimo->hIz->hDer = hijo;
-			hijo->hIz->hDer = minimo;
-			Link anteriorHijo = hijo->hIz;
-			hijo->hIz = minimo->hIz;
-			minimo->hIz = anteriorHijo;
-			min = minimo;
-			minimo->hijo = nullptr;
-			for (Link act = hijo; act != minimo; act = act->hDer) act->padre = nullptr;
-		}
-		// Eliminamos el minimo de la lista principal. No es necesario actalizar su grado a 0. Va a desaparecer
-
-		minimo->hIz->hDer = minimo->hDer;
-		minimo->hDer->hIz = minimo->hIz;
-
-		if (minimo == minimo->hDer) min = nullptr;
-		else {
-			min = minimo->hDer;
-			consolidar();
-		}
-		nelems--;
-		return minimo->elem;
-	}
-	else throw domain_error("No existe elemento minimo que quitar");
-
-}
-
-};
+	};
 
 #endif
