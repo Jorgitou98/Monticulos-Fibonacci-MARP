@@ -1,3 +1,7 @@
+/*
+Autor: Jorge Villarrubia Elvira
+*/
+
 #ifndef MonticuloFibonacci_h
 #define MonticuloFibonacci_h
 
