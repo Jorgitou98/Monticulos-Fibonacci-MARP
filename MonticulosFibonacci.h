@@ -270,14 +270,6 @@ protected:
 
 		void decrementarClave(T const& eAntiguo, T const& eNuevo) {
 			if (antes(eAntiguo, eNuevo)) throw invalid_argument("El valor de la nueva clave es mayor que el anterior");
-
-			else if (!elementos.count(eAntiguo)) throw domain_error("El valor de la clave antigua aun no esta");
-
-			/* Como no se admiten repetidos, si un elemento ya se decrece a otro que ya está
-			basta con eliminar dicho elemento
-			*/
-
-			else if (elementos.count(eNuevo)) eliminar(eAntiguo);
 			else {
 				Link eCambiar = elementos[eAntiguo];
 				eCambiar->elem = eNuevo;
@@ -378,7 +370,7 @@ public:
 		/* Cambio el montículo 2, que he unido, por uno vació. 
 		El usuario seguirá teniendo el mismo nº de montículos disponibles. 
 		No es necesario cambiar el puntero a monticulo de cada elemento del monticulo 2. Este puntero solo se usará
-		en decrementarClave, para llamar sobre un montículo que contenga la clave, y por tanto me sigue valiendo
+		en decrementarClave y eliminar, para llamar sobre un montículo que contenga la clave, y por tanto me sigue valiendo
 		el mismo puntero al montículo2 que ya tenía almacenado
 		*/
 		monticulos[pos2] = new mFib<T>(antesFam);		
@@ -395,6 +387,28 @@ public:
 			}
 		}
 	}
+
+	void decrementarClave(T const& eAntiguo, T const& eNuevo) {
+		if (!elementos.count(eAntiguo)) throw domain_error("El valor de la clave antigua aun no esta");
+		/* Como no se admiten repetidos, si un elemento ya se decrece a otro que ya está
+			basta con eliminar dicho elemento
+			*/
+		else if (elementos.count(eNuevo)) elementos[eAntiguo].second->eliminar(eAntiguo);
+		else {
+			try {
+				elementos[eAntiguo].second->decrementarClave(eAntiguo, eNuevo);
+			}
+			catch(domain_error d){
+				throw;
+			}
+		}
+	}
+	// Si la clave no está, no se hace nada
+	void eliminar(T const& e) {
+		if (elementos.count(e)) elementos[e].second->eliminar(e);
+	}
+
+
 
 
 };
