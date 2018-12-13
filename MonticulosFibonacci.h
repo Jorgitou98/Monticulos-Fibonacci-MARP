@@ -144,7 +144,7 @@ protected:
 				}
 
 				/* La varibale actSig es porque el avance no será siempre al siguiente en
-				la lista principal, de forma que guardo encada caso qué nodo vistoen la siguiente
+				la lista principal, de forma que guardo en cada caso qué nodo visto en la siguiente
 				iteración en esta variable */
 
 				Link act = min, actSig = min->hDer;
@@ -153,7 +153,7 @@ protected:
 					size_t g = act->grado;
 					while (A[g] != nullptr) {
 						y = A[g];
-						if (act->elem > y->elem) {
+						if (antes(y->elem, act->elem)) {
 							guardaAct = act;
 							act = y;
 							y = guardaAct;
@@ -344,7 +344,7 @@ public:
 			nelemsTotal++;
 		}
 	}
-	T const& minimo(int pos) const {
+	T const& minimo(int pos) {
 		// Tenemos disponibles montículos desde la posición 1 a la size()
 		if (pos > monticulos.size() || pos <= 0) throw domain_error("El montículo donde querías insertar no existe. Consulta los disponibles (desde 1 hasta size())");
 		else {
@@ -408,7 +408,15 @@ public:
 		if (elementos.count(e)) elementos[e].second->eliminar(e);
 	}
 
+	// Genera un montículo vació para que se pueda insertar en la posicion que toca (ultima de la familia)
+	void creaMonticuloVacio() {
+		mDir nuevoFib = new mFib<T>(antesFam);
+		monticulos.insert({ monticulos.size() + 1, nuevoFib });
+	}
 
+	bool estaElemento(T const& e) {
+		return elementos.count(e);
+	}
 
 
 };
