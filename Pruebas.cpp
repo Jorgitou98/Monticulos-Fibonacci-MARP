@@ -56,7 +56,7 @@ namespace TestMonticulosFibonacci
 		// Para la eliminar uno cualquiera necesitamos comprobar que esté el elemento antes
 		// Las expceciones se comporbarán depués. Por ahora vamos a hace eliminados correctos
 		// Para eliminar con mas frecuecia, generaremos random solo desde 0 hasta 19
-		TEST_METHOD(EiminacionElementoCualquiera) {
+		/*TEST_METHOD(EiminacionElementoCualquiera) {
 			srand(time(NULL));
 			priority_queue <int> pq;
 			familiaFib <int, greater<int>> fib;
@@ -72,7 +72,7 @@ namespace TestMonticulosFibonacci
 					fib.insertar(aleatorio, 1);
 				}
 			}
-		}
+		}*/
 	};
 
 	TEST_CLASS(TestDeErrores)
