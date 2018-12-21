@@ -63,7 +63,6 @@ protected:
 		Link min;
 
 		size_t nelems;
-		unordered_map<T, Link> elementos;
 
 		Comparator antes;
 
@@ -91,8 +90,13 @@ protected:
 
 		void cortar(Link const& hijo, Link const& padre) {
 			// Quito al hijo de la lista doblemente enlazada en que está
-			hijo->hIz->hDer = hijo->hDer;
-			hijo->hDer->hIz = hijo->hIz;
+			if (hijo->hIz != hijo) {
+				hijo->hIz->hDer = hijo->hDer;
+				hijo->hDer->hIz = hijo->hIz;
+			}
+			else padre->hijo = nullptr;
+
+			if (padre->hijo == hijo) padre->hijo = hijo->hDer;
 			padre->grado--;
 			insertaEnLPrincipal(hijo);
 			hijo->padre = nullptr;
@@ -163,6 +167,7 @@ protected:
 						en visitarse hago que el siguiente en visitarse sea su siguiente.
 						Lo avanzo uno de mas
 						*/
+						
 						if (actSig == min && y == min) {
 							actSig = y->hDer;
 						}
@@ -190,6 +195,7 @@ protected:
 		//Lo siguiente que se declara es un constructor del montículo vacío
 
 	protected:
+		
 		mFib(Comparator c = Comparator()) : antes(c), min(nullptr), nelems(0) {}
 
 		size_t size() {
@@ -240,8 +246,8 @@ protected:
 
 				if (hijo != nullptr) {
 					minimo->hIz->hDer = hijo;
-					hijo->hIz->hDer = minimo;
 					Link anteriorHijo = hijo->hIz;
+					hijo->hIz->hDer = minimo;
 					hijo->hIz = minimo->hIz;
 					minimo->hIz = anteriorHijo;
 					min = minimo;
@@ -258,8 +264,6 @@ protected:
 					min = minimo->hDer;
 					consolidar();
 				}
-
-				elementos.erase(minimo->elem);
 				nelems--;
 				T minBorrado = minimo->elem;
 				delete minimo;
@@ -268,10 +272,9 @@ protected:
 			else throw domain_error("No existe elemento minimo que quitar");
 		}
 
-		void decrementarClave(T const& eAntiguo, T const& eNuevo) {
-			if (antes(eAntiguo, eNuevo)) throw invalid_argument("El valor de la nueva clave es mayor que el anterior");
+		void decrementarClave(Link eCambiar, T const& eNuevo) {
+			if (antes(eCambiar->elem, eNuevo)) throw invalid_argument("El valor de la nueva clave es mayor que el anterior");
 			else {
-				Link eCambiar = elementos[eAntiguo];
 				eCambiar->elem = eNuevo;
 				Link padre = eCambiar->padre;
 				if (padre != nullptr && antes(eCambiar->elem, padre->elem)) {
@@ -279,32 +282,30 @@ protected:
 					cortarEnCascada(padre);
 				}
 				if (antes(eCambiar->elem, min->elem)) min = eCambiar;
-				elementos.erase(eAntiguo);
-				elementos.insert({ eNuevo , eCambiar });
 			}
 		}
 
-		void eliminar(T const& e) {
-			if (nelems > 0) {
-				if (e == min->elem) quitarMinimo();
-				else if (elementos.count(e)) {
+		Link eliminar(Link e) {
+			if (e->elem == min->elem) quitarMinimo();
+
+			else {
 					T minimo = min->elem;
 					quitarMinimo();
 					decrementarClave(e, minimo);
 					quitarMinimo();
 					insertar(minimo);
-				}
 			}
+			return min;
 		}
 
 	};
 
 	protected:
+		using mDir = mFib<T> *;
 
-		using mDir = mFib<T> * ;
 		/* Llevamos un diccionario no ordenado para acceder de forma constante a cada
-		elemento de la familia y saber en que montículo se encuentra, con un puntero a él
-		*/
+	elemento de la familia y saber en que montículo se encuentra, con un puntero a él
+	*/
 		unordered_map<T, pair<Link, mDir>> elementos;
 
 		// Diccionario que me permite acceder a un montículo a partir de su nº
@@ -380,7 +381,10 @@ public:
 		if (pos > monticulos.size() || pos <= 0) throw domain_error("El montículo donde querías insertar no existe. Consulta los disponibles (desde 1 hasta size())");
 		else {
 			try {
-				return monticulos[pos]->quitarMinimo();
+				if (elementos.size() > 0) elementos.erase(monticulos[pos]->minimo());
+				T mini = monticulos[pos]->quitarMinimo();
+				nelemsTotal--; // Solo si no ha saltado antes alguna excepción
+				return mini;
 			}
 			catch (domain_error d) {
 				throw;
@@ -393,10 +397,12 @@ public:
 		/* Como no se admiten repetidos, si un elemento ya se decrece a otro que ya está
 			basta con eliminar dicho elemento
 			*/
-		else if (elementos.count(eNuevo)) elementos[eAntiguo].second->eliminar(eAntiguo);
+		else if (elementos.count(eNuevo)) elementos[eAntiguo].second->eliminar(elementos[eAntiguo].first);
 		else {
 			try {
-				elementos[eAntiguo].second->decrementarClave(eAntiguo, eNuevo);
+				elementos[eAntiguo].second->decrementarClave(elementos[eAntiguo].first, eNuevo);
+				elementos.insert({ eNuevo , {elementos[eAntiguo].first, elementos[eAntiguo].second } });
+				elementos.erase(eAntiguo);
 			}
 			catch(domain_error d){
 				throw;
@@ -405,7 +411,12 @@ public:
 	}
 	// Si la clave no está, no se hace nada
 	void eliminar(T const& e) {
-		if (elementos.count(e)) elementos[e].second->eliminar(e);
+		if (elementos.count(e)) {
+			Link nuevoLinkMin = elementos[e].second->eliminar(elementos[e].first);
+			if(elementos.size() > 1) elementos[elementos[e].second->minimo()] = { nuevoLinkMin , elementos[e].second };
+			elementos.erase(e);
+			nelemsTotal--;
+		}
 	}
 
 	// Genera un montículo vació para que se pueda insertar en la posicion que toca (ultima de la familia)
@@ -417,7 +428,12 @@ public:
 	bool estaElemento(T const& e) {
 		return elementos.count(e);
 	}
-
+	/* Metodo para pruebas. No me devuelve empty vía nelems, sino vía que raiz sea null, para ver si se han borrado realmente y no solo
+	que se haya descendido el contador del nº de elementos
+	*/
+	bool emptyRaiz(int pos) { 
+		return monticulos[pos]->min == nullptr;
+	}
 
 };
 
